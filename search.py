@@ -56,15 +56,13 @@ def trace_path(cells, src, dest):
         row, col = cells[row][col].parent_x, cells[row][col].parent_y
 
     path.reverse()
-    # path = [(col, row) for row, col in path]
-    print(path)
+    path_coords = [(col, row) for row, col in path]
+    print(f"Path: {path_coords}")
     return path
 
 # A* algorithm
 # Dijkstra is not as effective as it can be in these settings.
 def a_star(grid, src, dest, is_diagonal_allowed):
-    print("Start search")   
-    print("Diagonal allowed:", is_diagonal_allowed)    
     if not is_valid(src[0], src[1]) or not is_valid(dest[0], dest[1]):
         print("The coordinates are not correct")
         return

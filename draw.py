@@ -1,21 +1,23 @@
 from PIL import Image, ImageDraw, ImageFilter
 
 def draw_path(paths):
-    image = Image.open("map.jpg")
+    image = Image.open("map_smoothed.jpg")
     image = image.convert("RGB")
-    new_image = ImageDraw.Draw(image)
-    pixel_path = [(int(col), int(row)) for row, col in paths]
-    new_image.line(pixel_path, fill='red', width = 1)
+    image_draw = ImageDraw.Draw(image)
+    pixel_path = [(col, row) for row, col in paths]
+    image_draw.line(pixel_path, fill='red', width = 1)
     image.show()
+    image.save("path.jpg")
 
-def prepare_image(path):
+def prepare_image(path, blur):
     image = Image.open(path)
     width, height = image.size
-    image = image.crop((0.15 * width, 0.15 * height, 0.85 * width, 0.815 * height))
+    image = image.crop((0, 0.15 * height, width, height))
     image = image.resize((100, 100))
     r,g,b = image.split()
-    r_smoothed = r.filter(ImageFilter.GaussianBlur(radius = 2))
+    r.save("map.jpg")
+    r_smoothed = r.filter(ImageFilter.GaussianBlur(radius = blur))
     r_smoothed.show()
-    r_smoothed.save("map.jpg")
+    r_smoothed.save("map_smoothed.jpg")
     return r_smoothed
  
