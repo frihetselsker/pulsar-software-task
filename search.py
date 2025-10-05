@@ -30,33 +30,17 @@ def can_be_climbed(grid, row_start, col_start, row_end, col_end):
     else: 
         leg_horizontal = 0.1 * (2 ** 0.5)    
     angle = math.degrees(math.atan2(leg_vertical, leg_horizontal))
-    # print(f"Angle: {angle}")
     return angle <= 30
 
-def calculate_h(row, col, dest):
+
+def calculate_h(row, col, dest, is_diagonal_allowed):
     dx = abs(row - dest[0]) * 0.1 
     dy = abs(col - dest[1]) * 0.1
-    return (2 ** 0.5 - 1) * min(dx, dy) + max(dx, dy)
-    # return (dx ** 2 + dy ** 2) ** 0.5
+    if is_diagonal_allowed:
+        return (2 ** 0.5 - 1) * min(dx, dy) + max(dx, dy)
+    else:
+        return dx + dy
     
-
-# def trace_path(cells, src, dest):
-#     path = []
-#     row = dest[0]
-#     col = dest[1]
-
-#     while not(src[0] == row and src[1] == col):
-#         # Add the current node
-#         path.append((row, col))
-#         # print(f"Path now: {path}")
-#         # Update the data, go to the previous node
-#         row = cells[row][col].parent_x
-#         col = cells[row][col].parent_y
-
-#     path.append((row, col))
-#     path.reverse()
-#     return path
-
 def trace_path(cells, src, dest):
     path = []
     row, col = dest
@@ -72,12 +56,15 @@ def trace_path(cells, src, dest):
         row, col = cells[row][col].parent_x, cells[row][col].parent_y
 
     path.reverse()
+    # path = [(col, row) for row, col in path]
+    print(path)
     return path
 
 # A* algorithm
 # Dijkstra is not as effective as it can be in these settings.
-def a_star(grid, src, dest):
+def a_star(grid, src, dest, is_diagonal_allowed):
     print("Start search")   
+    print("Diagonal allowed:", is_diagonal_allowed)    
     if not is_valid(src[0], src[1]) or not is_valid(dest[0], dest[1]):
         print("The coordinates are not correct")
         return
@@ -98,47 +85,49 @@ def a_star(grid, src, dest):
     cells[i][j].parent_y = j
 
     open_list = []
-    open_set = set()
-    heapq.heappush(open_list, (0.0, i, j))
-    open_set.add((i, j))
-    found_dest = False
-
-    directions = [(0, 1),(1, 0),(-1, 0),(0, -1),(1, 1),(-1, -1),(1, -1),(-1, 1)]
-
-    while len(open_list) > 0:
+    counter = 0
+    heapq.heappush(open_list, (0.0, counter, i, j))
+    counter += 1
+    if is_diagonal_allowed:
+        directions = [(0, 1),(1, 0),(-1, 0),(0, -1),(1, 1),(-1, -1),(1, -1),(-1, 1)]
+    else:
+        directions = [(0, 1),(1, 0),(-1, 0),(0, -1)]
+        
+    while open_list:
         p = heapq.heappop(open_list)
 
-        i = p[1]
-        j = p[2]
+        # f = p[0]
+        i = p[2]
+        j = p[3]
         if closed_list[i][j]:
             continue
         closed_list[i][j] = True
 
-        # print(f"Considered node: {p}")
+        if is_destination(i, j, dest):
+            print("The destination was found")
+            return trace_path(cells, src, dest)
 
         for dir in directions:
             new_i = i + dir[0]
             new_j = j + dir[1]
-      
+
+            
+            if not is_diagonal_allowed and abs(new_i - i) + abs(new_j - j) != 1:
+                continue      
             if not is_valid(new_i, new_j):
                 continue
-
             if closed_list[new_i][new_j]:
                 continue
-            
             if not can_be_climbed(grid, i, j, new_i, new_j):
                 continue
             
-            # print(f"New node: ({new_i}, {new_j})")
-            if is_destination(new_i, new_j, dest):
-                cells[new_i][new_j].parent_x = i
-                cells[new_i][new_j].parent_y = j
-                print("The destination was found")
-                found_dest = True
-                return trace_path(cells, src, dest)
-                
-            g_new = cells[i][j].g + 1.0 * (2 ** 0.5 if abs(dir[0]) == abs(dir[1]) else 1)
-            h_new = calculate_h(new_i, new_j, dest)
+             
+            if is_diagonal_allowed and abs(dir[0]) == abs(dir[1]):
+                g_step = (2 ** 0.5)
+            else:
+                g_step = 1.0
+            g_new = cells[i][j].g + g_step * 0.1
+            h_new = calculate_h(new_i, new_j, dest, is_diagonal_allowed)
             f_new = g_new + h_new
 
             if cells[new_i][new_j].f > f_new:
@@ -148,13 +137,14 @@ def a_star(grid, src, dest):
                 cells[new_i][new_j].parent_x = i
                 cells[new_i][new_j].parent_y = j
 
-                if (new_i, new_j) not in open_set:
-                    heapq.heappush(open_list, (f_new, new_i, new_j))
-                    open_set.add((new_i, new_j))
-                    
+                heapq.heappush(open_list, (f_new, counter, new_i, new_j))
+                counter += 1
 
-    if not found_dest:
-        print("Failed to find the path to the destination")
+                if is_destination(new_i, new_j, dest):
+                    return trace_path(cells, src, dest)
+                    
+    print("Failed to find the path to the destination")
+    return None
 
 def prepare_weights(red_channel):
     grid = numpy.array(red_channel)

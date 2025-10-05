@@ -1,4 +1,4 @@
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 def draw_path(paths):
     image = Image.open("map.jpg")
@@ -14,6 +14,8 @@ def prepare_image(path):
     image = image.crop((0.15 * width, 0.15 * height, 0.85 * width, 0.815 * height))
     image = image.resize((100, 100))
     r,g,b = image.split()
-    r.save("map.jpg")
-    return r
+    r_smoothed = r.filter(ImageFilter.GaussianBlur(radius = 2))
+    r_smoothed.show()
+    r_smoothed.save("map.jpg")
+    return r_smoothed
  
