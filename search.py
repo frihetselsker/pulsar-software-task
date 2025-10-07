@@ -63,12 +63,12 @@ def is_destination(row: int, col: int, dest: (int, int)) -> bool:
     """    
     return row == dest[0] and col == dest[1]
 
-def can_be_climbed(grid: list[list[int]], row_start: int, col_start: int, row_end: int, col_end: int) -> bool:
+def can_be_climbed(grid: list[list[float]], row_start: int, col_start: int, row_end: int, col_end: int) -> bool:
     """
     Check if the rover can climb on this node, i.e. angle is less or equal than 30 degrees.
 
     Args:
-        grid ([int][int]): The 2D list that contains all the heights of terrain considered.
+        grid (list[list[float]]): The 2D list that contains all the heights of terrain considered.
         row_start (int): The row of current node.
         col_start (int): The column of current node.
         row_end (int): The row of next node.
@@ -124,6 +124,9 @@ def calculate_h(row: int, col: int, dest: (int, int), is_diagonal_allowed: bool)
         # (2 ** 0.5 - 1) * min(dx, dy) + max(dx, dy) =
         # 2 ** 0.5 * dx - dx + dx = 2 ** 0.5 * dx
         # Which is right and covers the second case.
+
+        # This formula is intented to cover both diagonal and non-diagonal moves.
+        # We try to put the maximum possible number of diagonal moves to the path, and the rest if left is covered by simple 4-direction moves.
         return (2 ** 0.5 - 1) * min(dx, dy) + max(dx, dy)
     else:
         # Use Manhattan distance for only-diagonal movement.
@@ -131,18 +134,17 @@ def calculate_h(row: int, col: int, dest: (int, int), is_diagonal_allowed: bool)
         return dx + dy
     
 def trace_path(cells: list[list[Cell]], src: (int, int), dest: (int, int)) -> [(int, int)]:
-    
     """
     Create the list of coordinates that represent the path from source node to destination node. 
     This list is used for path drawing.
 
     Args:
-        cells ([Cell][Cell]): The 2D list containing all the information about each node
+        cells (list[list[Cell]]): The 2D list containing all the information about each node
         source ( (int, int) ):  The tuple source node coordinates. 
         dest ( (int, int) ): The tuple of destination node coordinates.
         
     Returns:
-        [(int)(int)]: The list of coordinates from source to destination.
+        [(int, int)]: The list of coordinates from source to destination.
     """    
     path = []
     row, col = dest
@@ -171,8 +173,19 @@ def trace_path(cells: list[list[Cell]], src: (int, int), dest: (int, int)) -> [(
     return path
 
 # A* algorithm
-# Dijkstra is not as effective as it can be in these settings.
-def a_star(grid: list[list[Cell]], src: (int, int), dest: (int, int), is_diagonal_allowed: bool) -> [(int, int)]:
+def a_star(grid: list[list[float]], src: (int, int), dest: (int, int), is_diagonal_allowed: bool) -> [(int, int)]:
+    """
+    Search for the shortest path from source node to destination node using A* algorithm.
+    
+    Args:
+        grid (list[list[float]]): The 2D list containing all the information about each node
+        source ( (int, int) ):  The tuple source node coordinates. 
+        dest ( (int, int) ): The tuple of destination node coordinates.
+        is_diagonal_allowed (bool): Sets if the diagonal moves are allowed.
+        
+    Returns:
+        [(int)(int)]: The list of coordinates from source to destination.
+    """    
     # Check if both source and destination nodes are valid.
     if not is_valid(src[0], src[1]) or not is_valid(dest[0], dest[1]):
         print("The coordinates are not correct")
@@ -263,7 +276,7 @@ def a_star(grid: list[list[Cell]], src: (int, int), dest: (int, int), is_diagona
     print("Failed to find the path to the destination")
     return None
 
-def prepare_weights(red_channel: ImageFile.ImageFile) -> list[list[int]]:
+def prepare_weights(red_channel: ImageFile.ImageFile) -> list[list[float]]:
     """
     Convert the image to the array.
     Normalize, multiple with the height.
@@ -272,7 +285,7 @@ def prepare_weights(red_channel: ImageFile.ImageFile) -> list[list[int]]:
         red_channel (ImageFile.ImageFile): PIL ImageFile object with only red_channel extracted.
 
     Returns:
-       [int][int]: height map, i.e 2D array with all the heights.
+       list[list[float]]: height map, i.e 2D array with all the heights.
     """    
     grid = numpy.array(red_channel)
     normalized = grid / 255.0
